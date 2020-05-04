@@ -1,20 +1,56 @@
-###########################################################################
-## For CSE574 Project 2
-## All models
-###########################################################################
+---
+title: "Prediction of Diabates with Dietary Habits"
+author: "Pin Lyu, Huangwei Ding, Matthew Sah"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
 
-rm(list = ls())
+```{r include = FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+```
 
-setwd('C:/Users/Administrator/iCloudDrive/Documents/UBSpring2020/CSE574/Project/Project')
+## Index
+- [Initializing](#Initializing) <br>
+- [Preprocessing](#Preprocessing)<br>
 
-############ install the package ############
-# install.packages('leaps')
-# install.packages('lda')
-# install.packages("ROSE")
-# install.packages("DMwR")
-# install.packages('class')
+#### 1. Logistic Regression
+- [Logistic Regression](#Logistic-Regression)<br>
+- [Accuracy Plotting For Logistic Regression](#Plot-Logistic-Regression)<br>
+- [F1 Plotting For Logistic Regression](#F1-Logistic-Regression)<br>
+- [AUC Plotting For Logistic Regression](#AUC-Logistic-Regression)<br>
 
-############ load the package ############
+#### 2. Linear Discriminant Analysis
+- [Linear Discriminant Analysis](#LDA)
+- [Accuracy Plotting for LDA](#Accuracy-LDA)
+- [F1 Plotting for LDA](#F1-LDA)
+- [AUC Plotting for LDA](#AUC-LDA)
+
+#### 3. KNN
+- [KNN](#KNN)
+- [Accuracy KNN](#Accuracy-KNN)
+- [F1 Plot KNN](#F1-KNN)
+- [AUC Plot KNN](#AUC-KNN)
+
+#### 4. CART with ROSE
+- [CART Rose](#CART-Rose)
+- [AUC for Rose with CART](#AUC-CART)
+
+#### 5. XGBoost
+- [XGBoost](#XGBoost)
+
+
+<br>
+<br> 
+
+---
+
+<br>
+<br>
+
+## Initializing {#Initializing}
+
+```{r, message=FALSE,  warning=FALSE, echo=FALSE}
 library(leaps)
 library(MASS)
 library(ROSE)
@@ -30,13 +66,18 @@ library(Ckmeans.1d.dp)
 library(car)
 library(DMwR)
 
-###Load datasets
+
 setwd("/home/mavericku/Documents/Prediction-of-Diabetes-with-Dietary-Habits/Project")
 load('dataset/preprocessed_dataset.Rdata')
 load('dataset/diet_have.Rdata')
 load('dataset/diet_nothave.Rdata')
 raw_data = dataset
+```
 
+
+## Preprocessing {#Preprocessing}
+**We then proceed to preprocess our data to make it optimal for prediction, steps include oversampling our positive case and dividing our data into training and test sets to help us verify our accuracy later on**
+```{r, message=FALSE,  warning=FALSE, echo=FALSE}
 ############ Functions #############
 
 #pre:prediction
@@ -52,15 +93,10 @@ f1_fun = function(pre, y) {
     fn[i] = sum(pre != class[i] & y == class[i])
   }
   f1 = 2 * tp / (2 * tp + fp + fn)
-  names(f1) = class
-  # print(table(pre,y))
-  # print('-------------f1--------------------')
-  # print(f1)
-  # print('--------------mean(f1)-------------------')
-  # print(mean(f1))
+  names(f1) = class 
   return(f1[2])
 }
-
+ 
 #######Divide train and test
 
 set.seed(123)
@@ -76,6 +112,7 @@ data_test <-
 
 y_test <- as.numeric(data_test$diab)
 
+
 ########### Oversampling data ########################
 
 data.rose <- ROSE(diab ~ ., data = data_train, seed = 1)$data
@@ -85,14 +122,30 @@ data.smote <- SMOTE(diab ~ ., data = data_train,k = 5, perc.over = 500)
 y_train <- as.numeric(data.rose$diab)
 
 
+```
+
+
+
+<br>
+<br> 
+
+---
+
+<br>
+<br>
+
+## 1. Logistic Regression{#Logistic-Regression}
+```{r, message=FALSE,  warning=FALSE}
+
+
 ################################################################
 ########        Logistics Regression                  ##########
 ################################################################
 
-########### eploy forward subset selection ##########
+########### Deploy forward subset selection ##########
 regfit.for <- regsubsets(diab~. - diab, data = data.rose, nbest = 1, nvmax = 70, method = "forward")
 my_sum <- summary(regfit.for)
-summary(regfit.for)
+##summary(regfit.for)
 
 select = summary(regfit.for)$outmat
 
@@ -125,56 +178,90 @@ for (i in 1:69) {
   lr_AUC_test[i] <- roc.curve(data_test$diab, pred.test)$auc
   
 }
+#which(lr_train_err==min(lr_train_err)) 
+#which(lr_test_err==min(lr_test_err))
+#which(lr_f1_train==max(lr_f1_train)) 
+```
 
+
+### Logistic Regression Accuracy{#Accuracy-Logistic-Regression}
+```{r }
 ############# plot out ##################
-graphics.off()
+#graphics.off()
 par(mfrow=c(1,2))
 plot(lr_train_err, type="l", 
-     main ="LR Training error - K predictors(Forward)", 
+     main ="LR Training error - K predictors ", 
      ylab ="Mean Absolute Error",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
 plot(lr_test_err, type="l",
-     main ="LR Test error - K predictors(Forward)", 
+     main ="LR Test error - K predictors ", 
      ylab ="Mean Absolute Error",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
 
-graphics.off()
+
+```
+
+
+### Logistic Regression F1 Score{#F1-Logistic-Regression}
+```{r}
+
+#graphics.off()
 par(mfrow=c(1,2))
 plot(lr_f1_train, type="l", 
-     main ="LR Training F1 score - K predictors(Forward)", 
+     main ="LR Training F1 score - K predictors ", 
      ylab ="F1-score",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
 plot(lr_f1_test, type="l",
-     main ="LR Test F1 score- K predictors(Forward)", 
+     main ="LR Test F1 score- K predictors ", 
      ylab ="F1-score",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
+```
 
-graphics.off()
+
+### Logistic Regression AUC Curve{#AUC-Logistic-Regression}
+```{r }
+#graphics.off()
 par(mfrow=c(1,2))
 plot(lr_AUC_train, type="l", 
-     main ="LR Trianing AUC - K predictors(Forward)", 
+     main ="LR Trianing AUC - K predictors ", 
      ylab ="F1-score",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
 plot(lr_AUC_test, type="l", 
-     main ="LR Testing AUC - K predictors(Forward)", 
+     main ="LR Testing AUC - K predictors ", 
      ylab ="F1-score",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
+  
+```
 
-which(lr_train_err==min(lr_train_err)) 
-which(lr_test_err==min(lr_test_err))
-which(lr_f1_train==max(lr_f1_train)) 
+### F1 Score of Logistic Regression{#F1-Score-Logistic-Regression}
+```{r}
 max(lr_f1_test)
+```
+### AUC Score of Logistic Regression {#AUC-Score-Logistic-Regression} 
+```{r}
 max(lr_AUC_test)
+```
 
-################################################################
-########      Linear Discriminant Analysis (LDA)      ##########
-################################################################
+
+
+
+<br>
+<br> 
+
+---
+
+<br>
+<br>
+
+
+##  2. Linear Discriminant Analysis{#LDA}
+```{r, message=FALSE,  warning=FALSE}
 
 lda_train_err <- NULL # store training error
 lda_test_err <- NULL  # store test error
@@ -203,12 +290,12 @@ for (i in 1:69) {
   
   lda_f1_train[i] <- f1_fun(y_hat_train, y_train)
   lda_f1_test[i] <- f1_fun(y_hat_test, y_test)
-  lda_AUC_train[i] <- roc.curve(data.rose$diab, y_hat_train)$auc
-  lda_AUC_test[i] <- roc.curve(data_test$diab, y_hat_test)$auc
+  lda_AUC_train[i] <- roc.curve(data.rose$diab, y_hat_train , plotit = FALSE)$auc
+  lda_AUC_test[i] <- roc.curve(data_test$diab, y_hat_test, plotit = FALSE)$auc
 }
-
-############# plot out ##################
-graphics.off()
+```
+### Accuracy Linear Discriminant Analysis{#Accuracy-LDA}
+```{r}
 par(mfrow=c(1,2))
 plot(lda_train_err, type="l", 
      main ="LDA Training error - K predictors(Forward)", 
@@ -221,8 +308,10 @@ plot(lda_test_err, type="l",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
 
-graphics.off()
-par(mfrow=c(1,2))
+```
+
+### F1 Linear Discriminant Analysis{#F1-LDA}
+```{r}
 plot(lda_f1_train, type="l", 
      main ="LDA training F1 score - K predictors(Forward)", 
      ylab ="F1-score",
@@ -234,8 +323,10 @@ plot(lda_f1_test, type="l",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
 
-graphics.off()
-par(mfrow=c(1,2))
+```
+
+### AUC Linear Discriminant Analysis{#AUC-LDA}
+```{r}
 plot(lda_AUC_train, type="l", 
      main ="LDA Training AUC - K predictors(Forward)", 
      ylab ="F1-score",
@@ -246,13 +337,31 @@ plot(lda_AUC_test, type="l",
      ylab ="F1-score",
      xlab = "Number of Predictors",
      xlim = c(0, 69))
-which(lda_f1_test==max(lda_f1_test))
-max(lda_f1_test)
-max(lda_AUC_test)
+```
 
-################################################################
-########        kNN                                   ##########
-################################################################
+
+### The F1 Score of LDA
+```{r}
+max(lda_f1_test)
+```
+### The AUC Score of LDA
+```{r}
+
+max(lda_AUC_test)
+```
+
+
+
+<br>
+<br> 
+
+---
+
+<br>
+<br>
+
+## 3. KNN{#KNN}
+```{r, message=FALSE, warning=FALSE}
 knn.train <- data.rose
 train.label <- knn.train$diab
 errors_knn <- c()
@@ -264,27 +373,52 @@ test.label <- data_test$diab
 for (i in c(1:20)){
   prediction.knn <- knn(knn.train, data_test, train.label, k = i)
   errors_knn <- c(errors_knn, 1-length(which(test.label == prediction.knn)) / length(test.label))
-  knn_AUC[i] <- roc.curve(data_test$diab, as.numeric(prediction.knn) - 1)$auc
+  knn_AUC[i] <- roc.curve(data_test$diab, as.numeric(prediction.knn) - 1, plotit = FALSE)$auc
   knn_f1[i] <- f1_fun(as.numeric(prediction.knn) - 1, data_test$diab)
 }
 
+```
+
+
+### Accuracy KNN{#Accuracy-KNN}
+```{r}
 k = 1:20
 plot(k,errors_knn,type = "l",main="knn errors--number of K",xlab="k values",ylab='k-nn error')
-plot(k,knn_AUC,type = "l",main="knn AUC--number of K",xlab="k values",ylab='k-nn error', ylim = c(0.45, 0.6))
+```
+
+
+### F1 KNN {#F1-KNN}
+```{r}
 plot(k,knn_f1,type = "l",main="knn F1 score--number of K",xlab="k values",ylab='k-nn error')
 
+```
 
-###########################################
-#######           Xgboost          ########
-###########################################
+### AUC KNN {#AUC-KNN}
+```{r}
+plot(k,knn_AUC,type = "l",main="knn AUC--number of K",xlab="k values",ylab='k-nn error', ylim = c(0.45, 0.6))
 
+```
+
+
+
+
+<br>
+<br> 
+
+---
+
+<br>
+<br>
+
+## 4. CART With Rose{#CART-Rose}
+```{r}
 
 b4_rose <- as.numeric(table(data_train$diab))
 after_rose <- as.numeric(table(data.rose$diab))
 
-labels <- c('Do not hava', 'Have')
+labels <- c('Do not have', 'Have')
 
-graphics.off()
+#graphics.off()
 par(mfrow = c(1,2))
 pie(b4_rose,labels, main = 'Before oversampling with ROSE')
 pie(after_rose,labels, main = 'After oversampling with ROSE')
@@ -296,45 +430,84 @@ dt = data.frame(table(data_train$diab))
 model.control <- rpart.control(minsplit = 5, xval = 10, cp = 0)
 fit <- rpart(diab~., data=data.rose, method = "class", control = model.control)
 # summary(fit)
+#f1_fun(predictions, data_test$diab) 
+#accuracy.meas(data_test$diab, predictions)
 predictions <- predict(fit, data_test, type="class")
 
-f1_fun(predictions, data_test$diab)
-
-accuracy.meas(data_test$diab, predictions)
-roc.curve(data_test$diab, predictions)
 ROSE_roc <- roc(as.numeric(data_test$diab), as.numeric(predictions))
 
-graphics.off()
+
+```
+
+
+
+### AUC Curve for ROSE with CART{#AUC-CART}
+```{r}
+
 plot(ROSE_roc, print.auc=TRUE, auc.polygon=TRUE, 
      grid=c(0.1, 0.2),grid.col=c("green", "red"), 
      max.auc.polygon=TRUE,auc.polygon.col="skyblue", 
      print.thres=TRUE,main='ROC curve with ROSE')
+```
+
+ 
+### AUC Score
+```{r}
+roc.curve(data_test$diab, predictions)
+```
 
 
-###########################################
-#######           Xgboost          ########
-###########################################
+<br>
+<br>
+
+---
+
+<br>
+<br>
+
+## 5. XGBoost {#XGBoost}
+
+```{r}
 
 m_data <- data.matrix(data.rose[, -c(1)], rownames.force = NA)
 y_train <- as.numeric(data.rose$diab)
 
 xgb <- xgboost(data = m_data,label = y_train, max_depth=6, eta=0.5,  
-               objective='binary:logistic', nround=25)
+               objective='binary:logistic', nround=25, verbose = 0)
 
 importance <- xgb.importance(model = xgb)
-head(importance)
-graphics.off()
+#head(importance)
+#graphics.off()
 xgb.ggplot.importance(importance)
+
+```
+
+### F1 Score Table
+```{r}
 m_test <- data.matrix(data_test[, -c(1)])
 
+
+#f1_fun(y_test, pre_xgb)
 pre_xgb = round(predict(xgb, m_test))
 table(y_test, pre_xgb)
 
-f1_fun(y_test, pre_xgb)
+```
 
-xgboost_roc <- roc(y_test, pre_xgb)
+### Plot ROC Curve
+```{r}
+
+xgboost_roc <- roc(y_test, pre_xgb, quiet = TRUE)
 plot(xgboost_roc, print.auc=TRUE, auc.polygon=TRUE, 
      grid=c(0.1, 0.2),grid.col=c("green", "red"), 
      max.auc.polygon=TRUE,auc.polygon.col="skyblue", 
      print.thres=TRUE,main='ROC curve')
+```
 
+
+<br>
+<br>
+
+---
+
+<br>
+<br>

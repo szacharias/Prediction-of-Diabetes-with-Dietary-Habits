@@ -1,0 +1,6 @@
+
+*.docx#
+
+Project/.Rhistory
+
+Project/.RData
