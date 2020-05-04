@@ -1,1 +1,2 @@
 # Prediction-of-Diabetes-with-Dietary-Habits
+To view a demonstration of the code and the product of our project please follow [this line](https://htmlpreview.github.io/?https://github.com/szacharias/Prediction-of-Diabetes-with-Dietary-Habits/blob/master/Report.html)
